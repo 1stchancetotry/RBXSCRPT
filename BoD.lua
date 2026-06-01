@@ -2,7 +2,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 _G.KillAuraEnabled = false
 _G.AuraDistance = 25
-_G.MaxZombies = 15
+_G.MaxZombies = 5
 _G.WalkSpeed = 16
 _G.JumpPower = 50
 
@@ -24,6 +24,7 @@ local Window = Rayfield:CreateWindow({
 
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
 
 -- ========================
 -- COMBAT TAB
@@ -35,97 +36,98 @@ local KillAuraToggle = CombatTab:CreateToggle({
    Name = "Kill Aura",
    CurrentValue = false,
    Flag = "KillAuraToggle",
-   Callback = function(Value)
-      _G.KillAuraEnabled = Value
-   end,
+   Callback = function(Value) _G.KillAuraEnabled = Value end,
 })
 
 local AuraDistanceSlider = CombatTab:CreateSlider({
    Name = "Kill Aura Distance",
-   Range = {10, 1000},
-   Increment = 5,
-   Suffix = "Studs",
-   CurrentValue = 25,
-   Flag = "AuraDistance",
-   Callback = function(Value)
-      _G.AuraDistance = Value
-   end,
+   Range = {10, 1000}, Increment = 5, Suffix = "Studs",
+   CurrentValue = 25, Flag = "AuraDistance",
+   Callback = function(Value) _G.AuraDistance = Value end,
 })
 
 local MaxZombiesSlider = CombatTab:CreateSlider({
    Name = "Max Zombies per Tick",
-   Range = {1, 15},
-   Increment = 1,
-   Suffix = "Targets",
-   CurrentValue = 15,
-   Flag = "MaxZombies",
-   Callback = function(Value)
-      _G.MaxZombies = Value
-   end,
+   Range = {1, 15}, Increment = 1, Suffix = "Targets",
+   CurrentValue = 5, Flag = "MaxZombies",
+   Callback = function(Value) _G.MaxZombies = Value end,
 })
 
 -- ========================
--- ITEMS TAB (SCANNER & SELECTOR)
+-- ITEMS TAB (SMART SCANNER)
 -- ========================
 local ItemsTab = Window:CreateTab("Items", 4483362458)
-ItemsTab:CreateSection("Item Scanner & Selector")
+ItemsTab:CreateSection("Smart Item Scanner")
 
--- Dropdown to hold the list of scanned items
+-- Dropdown for items
 local ItemSelectorDropdown = ItemsTab:CreateDropdown({
    Name = "Select Item to Bring",
    Options = {"Scan First"},
    CurrentOption = {"Scan First"},
    MultipleOptions = false,
    Flag = "ItemSelectorDropdown",
-   Callback = function(SelectedOptions)
-      -- Just updates the internal variable, no action needed here yet
-   end,
+   Callback = function(SelectedOptions) end,
 })
 
--- Button to Scan and Populate Dropdown
+-- Button to Scan Items (Improved Logic)
 local ScanButton = ItemsTab:CreateButton({
    Name = "Scan All Items",
    Callback = function()
       local itemList = {}
-      local interactables = workspace:FindFirstChild("Interactables")
+      local foundCount = 0
       
-      if interactables then
-         for _, v in pairs(interactables:GetChildren()) do
-            -- Filter out price tags and non-models
-            if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
-               table.insert(itemList, v.Name)
+      -- List of possible folders where items might be
+      local possibleFolders = {
+         Workspace:FindFirstChild("Interactables"),
+         Workspace:FindFirstChild("Drops"),
+         Workspace:FindFirstChild("Items"),
+         Workspace:FindFirstChild("Map"),
+         Workspace -- Fallback to whole workspace
+      }
+      
+      for _, folder in pairs(possibleFolders) do
+         if folder then
+            for _, v in pairs(folder:GetChildren()) do
+               -- Check if it's a model and not a price tag/UI element
+               if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and not v:FindFirstChild("BillboardGui") then
+                  -- Avoid duplicates
+                  if not table.find(itemList, v.Name) then
+                     table.insert(itemList, v.Name)
+                     foundCount = foundCount + 1
+                  end
+               end
             end
          end
-         
-         -- Sort alphabetically
-         table.sort(itemList)
-         
-         if #itemList > 0 then
+      end
+      
+      -- Sort alphabetically
+      table.sort(itemList)
+      
+      if #itemList > 0 then
+         -- Use pcall to prevent Rayfield callback errors
+         pcall(function()
             ItemSelectorDropdown:SetOptions(itemList)
-            Rayfield:Notify({
-               Title = "Scan Complete",
-               Content = "Found " .. #itemList .. " items. Select one below.",
-               Duration = 3
-            })
-         else
-            ItemSelectorDropdown:SetOptions({"No Items Found"})
-            Rayfield:Notify({
-               Title = "Scan Failed",
-               Content = "No interactable items found.",
-               Duration = 3
-            })
-         end
-      else
+         end)
+         
          Rayfield:Notify({
-            Title = "Error",
-            Content = "Interactables folder not found!",
+            Title = "Scan Complete",
+            Content = "Found " .. #itemList .. " unique items.",
+            Duration = 3
+         })
+      else
+         pcall(function()
+            ItemSelectorDropdown:SetOptions({"No Items Found"})
+         end)
+         Rayfield:Notify({
+            Title = "Scan Failed",
+            Content = "No interactable models found in Workspace.",
             Duration = 3
          })
       end
    end,
 })
 
--- Button to Bring ONLY the Selected Item
+-- Button to Bring Selected Item
 local BringSelectedButton = ItemsTab:CreateButton({
    Name = "Bring Selected Item",
    Callback = function()
@@ -142,43 +144,39 @@ local BringSelectedButton = ItemsTab:CreateButton({
          return
       end
       
-      local interactables = workspace:FindFirstChild("Interactables")
-      if interactables then
-         local found = false
-         for _, v in pairs(interactables:GetChildren()) do
-            if v.Name == selectedName and v:IsA("Model") and v.PrimaryPart then
-               -- Teleport the specific item to the player
-               v.PrimaryPart.CFrame = character.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
-               found = true
-               Rayfield:Notify({
-                  Title = "Success",
-                  Content = "Brought '" .. selectedName .. "' to you.",
-                  Duration = 3
-               })
-               break -- Stop after finding the first match
-            end
-         end
-         
-         if not found then
+      -- Search everywhere for the selected item
+      local found = false
+      for _, v in pairs(Workspace:GetDescendants()) do
+         if v.Name == selectedName and v:IsA("Model") and v.PrimaryPart then
+            v.PrimaryPart.CFrame = character.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
+            found = true
             Rayfield:Notify({
-               Title = "Not Found",
-               Content = "Item '" .. selectedName .. "' was not found in workspace.",
+               Title = "Success",
+               Content = "Brought '" .. selectedName .. "' to you.",
                Duration = 3
             })
+            break
          end
+      end
+      
+      if not found then
+         Rayfield:Notify({
+            Title = "Not Found",
+            Content = "Could not find '" .. selectedName .. "' in Workspace.",
+            Duration = 3
+         })
       end
    end,
 })
 
 ItemsTab:CreateSection("Bulk Actions")
 
--- Keep your original Bring Bodies button
 local BringBodiesButton = ItemsTab:CreateButton({
    Name = "Bring All Bodies",
    Callback = function()
       local character = Players.LocalPlayer.Character
       if not character or not character.PrimaryPart then return end
-      for _, v in pairs(workspace.Interactables:GetChildren()) do
+      for _, v in pairs(Workspace:GetDescendants()) do
           if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
               if v:FindFirstChild("Humanoid") or string.match(v.Name:lower(), "body") or string.match(v.Name:lower(), "corpse") then
                   local root = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
@@ -199,26 +197,16 @@ PlayerTab:CreateSection("Character Settings")
 
 local WalkSpeedSlider = PlayerTab:CreateSlider({
    Name = "WalkSpeed",
-   Range = {16, 200},
-   Increment = 5,
-   Suffix = "Speed",
-   CurrentValue = 16,
-   Flag = "WalkSpeed",
-   Callback = function(Value)
-      _G.WalkSpeed = Value
-   end,
+   Range = {16, 200}, Increment = 5, Suffix = "Speed",
+   CurrentValue = 16, Flag = "WalkSpeed",
+   Callback = function(Value) _G.WalkSpeed = Value end,
 })
 
 local JumpPowerSlider = PlayerTab:CreateSlider({
    Name = "JumpPower",
-   Range = {50, 200},
-   Increment = 10,
-   Suffix = "Power",
-   CurrentValue = 50,
-   Flag = "JumpPower",
-   Callback = function(Value)
-      _G.JumpPower = Value
-   end,
+   Range = {50, 200}, Increment = 10, Suffix = "Power",
+   CurrentValue = 50, Flag = "JumpPower",
+   Callback = function(Value) _G.JumpPower = Value end,
 })
 
 -- ========================
@@ -234,16 +222,18 @@ task.spawn(function()
                 local maxTargets = _G.MaxZombies or 5
                 local count = 0
                 
-                for _, monster in pairs(workspace.Monsters:GetChildren()) do
+                for _, monster in pairs(Workspace:FindFirstChild("Monsters"):GetChildren()) do
                     if count >= maxTargets then break end
                     if monster:FindFirstChild("HumanoidRootPart") then
                         local d = (root.Position - monster.HumanoidRootPart.Position).Magnitude
                         if d < distance then
-                            ZAP.meleeAttack.fire({
-                                monsters = {monster},
-                                civilians = {},
-                                activeSlot = 1
-                            })
+                            pcall(function()
+                                ZAP.meleeAttack.fire({
+                                    monsters = {monster},
+                                    civilians = {},
+                                    activeSlot = 1
+                                })
+                            end)
                             count = count + 1
                         end
                     end
@@ -269,13 +259,7 @@ end)
 
 Rayfield:Notify({
    Title = "Bake or Die Script Loaded",
-   Content = "Item Selector Added.",
+   Content = "Smart Scanner Active.",
    Duration = 5,
    Image = 4483362458,
-   Actions = {
-      Ignore = {
-         Name = "Okay!",
-         Callback = function() end
-      }
-   },
 })
