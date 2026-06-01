@@ -25,6 +25,9 @@ local Window = Rayfield:CreateWindow({
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 
+-- ========================
+-- COMBAT TAB
+-- ========================
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 CombatTab:CreateSection("Kill Aura")
 
@@ -61,11 +64,117 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
    end,
 })
 
+-- ========================
+-- ITEMS TAB (SCANNER & SELECTOR)
+-- ========================
 local ItemsTab = Window:CreateTab("Items", 4483362458)
-ItemsTab:CreateSection("Item Management")
+ItemsTab:CreateSection("Item Scanner & Selector")
 
+-- Dropdown to hold the list of scanned items
+local ItemSelectorDropdown = ItemsTab:CreateDropdown({
+   Name = "Select Item to Bring",
+   Options = {"Scan First"},
+   CurrentOption = {"Scan First"},
+   MultipleOptions = false,
+   Flag = "ItemSelectorDropdown",
+   Callback = function(SelectedOptions)
+      -- Just updates the internal variable, no action needed here yet
+   end,
+})
+
+-- Button to Scan and Populate Dropdown
+local ScanButton = ItemsTab:CreateButton({
+   Name = "Scan All Items",
+   Callback = function()
+      local itemList = {}
+      local interactables = workspace:FindFirstChild("Interactables")
+      
+      if interactables then
+         for _, v in pairs(interactables:GetChildren()) do
+            -- Filter out price tags and non-models
+            if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
+               table.insert(itemList, v.Name)
+            end
+         end
+         
+         -- Sort alphabetically
+         table.sort(itemList)
+         
+         if #itemList > 0 then
+            ItemSelectorDropdown:SetOptions(itemList)
+            Rayfield:Notify({
+               Title = "Scan Complete",
+               Content = "Found " .. #itemList .. " items. Select one below.",
+               Duration = 3
+            })
+         else
+            ItemSelectorDropdown:SetOptions({"No Items Found"})
+            Rayfield:Notify({
+               Title = "Scan Failed",
+               Content = "No interactable items found.",
+               Duration = 3
+            })
+         end
+      else
+         Rayfield:Notify({
+            Title = "Error",
+            Content = "Interactables folder not found!",
+            Duration = 3
+         })
+      end
+   end,
+})
+
+-- Button to Bring ONLY the Selected Item
+local BringSelectedButton = ItemsTab:CreateButton({
+   Name = "Bring Selected Item",
+   Callback = function()
+      local selectedName = ItemSelectorDropdown.CurrentOption[1]
+      local character = Players.LocalPlayer.Character
+      
+      if not character or not character.PrimaryPart then
+         Rayfield:Notify({ Title = "Error", Content = "Character not loaded!", Duration = 3 })
+         return
+      end
+      
+      if selectedName == "Scan First" or selectedName == "No Items Found" then
+         Rayfield:Notify({ Title = "Error", Content = "Please scan and select an item first!", Duration = 3 })
+         return
+      end
+      
+      local interactables = workspace:FindFirstChild("Interactables")
+      if interactables then
+         local found = false
+         for _, v in pairs(interactables:GetChildren()) do
+            if v.Name == selectedName and v:IsA("Model") and v.PrimaryPart then
+               -- Teleport the specific item to the player
+               v.PrimaryPart.CFrame = character.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
+               found = true
+               Rayfield:Notify({
+                  Title = "Success",
+                  Content = "Brought '" .. selectedName .. "' to you.",
+                  Duration = 3
+               })
+               break -- Stop after finding the first match
+            end
+         end
+         
+         if not found then
+            Rayfield:Notify({
+               Title = "Not Found",
+               Content = "Item '" .. selectedName .. "' was not found in workspace.",
+               Duration = 3
+            })
+         end
+      end
+   end,
+})
+
+ItemsTab:CreateSection("Bulk Actions")
+
+-- Keep your original Bring Bodies button
 local BringBodiesButton = ItemsTab:CreateButton({
-   Name = "Bring Bodies",
+   Name = "Bring All Bodies",
    Callback = function()
       local character = Players.LocalPlayer.Character
       if not character or not character.PrimaryPart then return end
@@ -82,19 +191,9 @@ local BringBodiesButton = ItemsTab:CreateButton({
    end,
 })
 
-local BringAllButton = ItemsTab:CreateButton({
-   Name = "Bring All Items",
-   Callback = function()
-      local character = Players.LocalPlayer.Character
-      if not character or not character.PrimaryPart then return end
-      for _, v in pairs(workspace.Interactables:GetChildren()) do
-          if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and v.PrimaryPart then
-              v.PrimaryPart.CFrame = character.PrimaryPart.CFrame
-          end
-      end
-   end,
-})
-
+-- ========================
+-- PLAYER TAB
+-- ========================
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 PlayerTab:CreateSection("Character Settings")
 
@@ -122,8 +221,11 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
    end,
 })
 
+-- ========================
+-- LOOPS
+-- ========================
 task.spawn(function()
-    while true do
+    while task.wait() do
         if _G.KillAuraEnabled then
             local character = Players.LocalPlayer.Character
             if character and character:FindFirstChild("HumanoidRootPart") then
@@ -148,12 +250,11 @@ task.spawn(function()
                 end
             end
         end
-        task.wait()
     end
 end)
 
 task.spawn(function()
-    while true do
+    while task.wait() do
         local character = Players.LocalPlayer.Character
         if character and character:FindFirstChild("Humanoid") then
             local humanoid = character.Humanoid
@@ -163,13 +264,12 @@ task.spawn(function()
                 humanoid.JumpPower = _G.JumpPower
             end
         end
-        task.wait()
     end
 end)
 
 Rayfield:Notify({
    Title = "Bake or Die Script Loaded",
-   Content = "All features updated.",
+   Content = "Item Selector Added.",
    Duration = 5,
    Image = 4483362458,
    Actions = {
