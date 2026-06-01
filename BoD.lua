@@ -54,100 +54,76 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
 })
 
 -- ========================
--- ITEMS TAB (FIXED SCANNER)
+-- ITEMS TAB (SEARCH & BRING)
 -- ========================
 local ItemsTab = Window:CreateTab("Items", 4483362458)
-ItemsTab:CreateSection("Item Scanner")
+ItemsTab:CreateSection("Item Scanner & Search")
 
--- Dropdown for items
-local ItemSelectorDropdown = ItemsTab:CreateDropdown({
-   Name = "Select Item to Bring",
-   Options = {"Scan First"},
-   CurrentOption = {"Scan First"},
-   MultipleOptions = false,
-   Flag = "ItemSelectorDropdown",
-   Callback = function(SelectedOptions) end,
-})
-
--- Button to Scan Items
-local ScanButton = ItemsTab:CreateButton({
-   Name = "Scan All Items",
-   Callback = function()
-      local itemList = {}
-      
-      -- Search the entire workspace for models that aren't UI/PriceTags
-      for _, v in pairs(Workspace:GetDescendants()) do
-         if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and not v:FindFirstChild("BillboardGui") then
-            -- Avoid duplicates
-            if not table.find(itemList, v.Name) then
-               table.insert(itemList, v.Name)
-            end
-         end
-      end
-      
-      -- Sort alphabetically
-      table.sort(itemList)
-      
-      if #itemList > 0 then
-         -- Use pcall to prevent Rayfield callback errors on mobile
-         pcall(function()
-            ItemSelectorDropdown:SetOptions(itemList)
-         end)
-         
-         Rayfield:Notify({
-            Title = "Scan Complete",
-            Content = "Found " .. #itemList .. " items.",
-            Duration = 3
-         })
-      else
-         pcall(function()
-            ItemSelectorDropdown:SetOptions({"No Items Found"})
-         end)
-         Rayfield:Notify({
-            Title = "Scan Failed",
-            Content = "No interactable models found.",
-            Duration = 3
-         })
-      end
+-- Input Box for Item Name
+local ItemSearchInput = ItemsTab:CreateInput({
+   Name = "Enter Item Name",
+   PlaceholderText = "e.g. Flour, Shotgun",
+   RemoveTextAfterFocusLost = false,
+   Flag = "ItemSearchInput",
+   Callback = function(Text)
+      -- Store the text in a global variable for the button to use
+      _G.SearchQuery = Text
    end,
 })
 
--- Button to Bring Selected Item
-local BringSelectedButton = ItemsTab:CreateButton({
-   Name = "Bring Selected Item",
+-- Button to Scan and Show Count
+local ScanButton = ItemsTab:CreateButton({
+   Name = "Scan All Items",
    Callback = function()
-      local selectedName = ItemSelectorDropdown.CurrentOption[1]
-      local character = Players.LocalPlayer.Character
+      local count = 0
+      for _, v in pairs(Workspace:GetDescendants()) do
+         if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
+            count = count + 1
+         end
+      end
+      Rayfield:Notify({
+         Title = "Scan Complete",
+         Content = "Found " .. count .. " interactable models.",
+         Duration = 3
+      })
+   end,
+})
+
+-- Button to Bring Item by Name
+local BringByNameButton = ItemsTab:CreateButton({
+   Name = "Bring Item by Name",
+   Callback = function()
+      local query = _G.SearchQuery
+      if not query or query == "" then
+         Rayfield:Notify({ Title = "Error", Content = "Please enter an item name first!", Duration = 3 })
+         return
+      end
       
+      local character = Players.LocalPlayer.Character
       if not character or not character.PrimaryPart then
          Rayfield:Notify({ Title = "Error", Content = "Character not loaded!", Duration = 3 })
          return
       end
       
-      if selectedName == "Scan First" or selectedName == "No Items Found" then
-         Rayfield:Notify({ Title = "Error", Content = "Please scan and select an item first!", Duration = 3 })
-         return
-      end
-      
-      -- Search everywhere for the selected item
       local found = false
+      -- Search everywhere for the item (case-insensitive partial match)
       for _, v in pairs(Workspace:GetDescendants()) do
-         if v.Name == selectedName and v:IsA("Model") and v.PrimaryPart then
+         if v:IsA("Model") and v.Name:lower():find(query:lower()) and v.PrimaryPart then
             v.PrimaryPart.CFrame = character.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
             found = true
             Rayfield:Notify({
                Title = "Success",
-               Content = "Brought '" .. selectedName .. "' to you.",
+               Content = "Brought '" .. v.Name .. "' to you.",
                Duration = 3
             })
-            break
+            break -- Stop after finding the first match
          end
       end
       
       if not found then
          Rayfield:Notify({
             Title = "Not Found",
-            Content = "Could not find '" .. selectedName .. "'. It may have been picked up.",
+            Content = "No item matching '" .. query .. "' found.",
             Duration = 3
          })
       end
@@ -156,7 +132,7 @@ local BringSelectedButton = ItemsTab:CreateButton({
 
 ItemsTab:CreateSection("Bulk Actions")
 
--- RESTORED ORIGINAL LOGIC: Only brings bodies/corpses, NOT living NPCs
+-- RESTORED ORIGINAL LOGIC: Only brings bodies/corpses
 local BringBodiesButton = ItemsTab:CreateButton({
    Name = "Bring All Bodies",
    Callback = function()
@@ -166,6 +142,7 @@ local BringBodiesButton = ItemsTab:CreateButton({
       for _, v in pairs(Workspace:GetDescendants()) do
           if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
               -- Check if it's a body/corpse by name or humanoid presence
+              -- This matches your original logic exactly
               if v:FindFirstChild("Humanoid") or string.match(v.Name:lower(), "body") or string.match(v.Name:lower(), "corpse") then
                   local root = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
                   if root then
@@ -174,6 +151,11 @@ local BringBodiesButton = ItemsTab:CreateButton({
               end
           end
       end
+      Rayfield:Notify({
+         Title = "Action Complete",
+         Content = "Brought all bodies/corpses to you.",
+         Duration = 3
+      })
    end,
 })
 
@@ -187,6 +169,11 @@ local BringAllButton = ItemsTab:CreateButton({
               v.PrimaryPart.CFrame = character.PrimaryPart.CFrame
           end
       end
+      Rayfield:Notify({
+         Title = "Action Complete",
+         Content = "Brought all items to you.",
+         Duration = 3
+      })
    end,
 })
 
@@ -263,7 +250,7 @@ end)
 
 Rayfield:Notify({
    Title = "Bake or Die Script Loaded",
-   Content = "Scanner & Original Logic Restored.",
+   Content = "Search & Bring System Active.",
    Duration = 5,
    Image = 4483362458,
 })
