@@ -54,47 +54,33 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
 })
 
 -- ========================
--- ITEMS TAB (BUTTON LIST SCANNER)
+-- ITEMS TAB (FIXED SCANNER)
 -- ========================
 local ItemsTab = Window:CreateTab("Items", 4483362458)
 ItemsTab:CreateSection("Item Scanner")
 
--- Container to hold our dynamic buttons
-local ItemListContainer = ItemsTab:CreateSection("Scanned Items List")
+-- Dropdown for items
+local ItemSelectorDropdown = ItemsTab:CreateDropdown({
+   Name = "Select Item to Bring",
+   Options = {"Scan First"},
+   CurrentOption = {"Scan First"},
+   MultipleOptions = false,
+   Flag = "ItemSelectorDropdown",
+   Callback = function(SelectedOptions) end,
+})
 
--- Button to Scan and Create Buttons
+-- Button to Scan Items
 local ScanButton = ItemsTab:CreateButton({
-   Name = "Scan & Load Items",
+   Name = "Scan All Items",
    Callback = function()
-      -- Clear previous buttons if any (Rayfield doesn't support clearing sections easily, 
-      -- so we just append new ones. For a clean UI, you might need to reload the script after scanning.)
-      
       local itemList = {}
-      local foundCount = 0
       
-      -- Search common folders
-      local possibleFolders = {
-         Workspace:FindFirstChild("Interactables"),
-         Workspace:FindFirstChild("Drops"),
-         Workspace:FindFirstChild("Items"),
-         Workspace:FindFirstChild("Map"),
-      }
-      
-      -- If no specific folder, search whole workspace
-      local searchArea = Workspace
-      for _, folder in pairs(possibleFolders) do
-         if folder then
-            searchArea = folder
-            break
-         end
-      end
-
-      -- Get all models
-      for _, v in pairs(searchArea:GetChildren()) do
+      -- Search the entire workspace for models that aren't UI/PriceTags
+      for _, v in pairs(Workspace:GetDescendants()) do
          if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and not v:FindFirstChild("BillboardGui") then
+            -- Avoid duplicates
             if not table.find(itemList, v.Name) then
                table.insert(itemList, v.Name)
-               foundCount = foundCount + 1
             end
          end
       end
@@ -103,22 +89,20 @@ local ScanButton = ItemsTab:CreateButton({
       table.sort(itemList)
       
       if #itemList > 0 then
+         -- Use pcall to prevent Rayfield callback errors on mobile
+         pcall(function()
+            ItemSelectorDropdown:SetOptions(itemList)
+         end)
+         
          Rayfield:Notify({
             Title = "Scan Complete",
-            Content = "Found " .. #itemList .. " items. Scroll down to see them.",
+            Content = "Found " .. #itemList .. " items.",
             Duration = 3
          })
-         
-         -- Create a button for EACH item
-         for _, itemName in ipairs(itemList) do
-            ItemsTab:CreateButton({
-               Name = "Bring: " .. itemName,
-               Callback = function()
-                  BringItemToPlayer(itemName)
-               end,
-            })
-         end
       else
+         pcall(function()
+            ItemSelectorDropdown:SetOptions({"No Items Found"})
+         end)
          Rayfield:Notify({
             Title = "Scan Failed",
             Content = "No interactable models found.",
@@ -128,21 +112,79 @@ local ScanButton = ItemsTab:CreateButton({
    end,
 })
 
+-- Button to Bring Selected Item
+local BringSelectedButton = ItemsTab:CreateButton({
+   Name = "Bring Selected Item",
+   Callback = function()
+      local selectedName = ItemSelectorDropdown.CurrentOption[1]
+      local character = Players.LocalPlayer.Character
+      
+      if not character or not character.PrimaryPart then
+         Rayfield:Notify({ Title = "Error", Content = "Character not loaded!", Duration = 3 })
+         return
+      end
+      
+      if selectedName == "Scan First" or selectedName == "No Items Found" then
+         Rayfield:Notify({ Title = "Error", Content = "Please scan and select an item first!", Duration = 3 })
+         return
+      end
+      
+      -- Search everywhere for the selected item
+      local found = false
+      for _, v in pairs(Workspace:GetDescendants()) do
+         if v.Name == selectedName and v:IsA("Model") and v.PrimaryPart then
+            v.PrimaryPart.CFrame = character.PrimaryPart.CFrame + Vector3.new(0, 5, 0)
+            found = true
+            Rayfield:Notify({
+               Title = "Success",
+               Content = "Brought '" .. selectedName .. "' to you.",
+               Duration = 3
+            })
+            break
+         end
+      end
+      
+      if not found then
+         Rayfield:Notify({
+            Title = "Not Found",
+            Content = "Could not find '" .. selectedName .. "'. It may have been picked up.",
+            Duration = 3
+         })
+      end
+   end,
+})
+
 ItemsTab:CreateSection("Bulk Actions")
 
+-- RESTORED ORIGINAL LOGIC: Only brings bodies/corpses, NOT living NPCs
 local BringBodiesButton = ItemsTab:CreateButton({
    Name = "Bring All Bodies",
    Callback = function()
       local character = Players.LocalPlayer.Character
       if not character or not character.PrimaryPart then return end
+      
       for _, v in pairs(Workspace:GetDescendants()) do
           if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
+              -- Check if it's a body/corpse by name or humanoid presence
               if v:FindFirstChild("Humanoid") or string.match(v.Name:lower(), "body") or string.match(v.Name:lower(), "corpse") then
                   local root = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
                   if root then
                       root.CFrame = character.PrimaryPart.CFrame
                   end
               end
+          end
+      end
+   end,
+})
+
+local BringAllButton = ItemsTab:CreateButton({
+   Name = "Bring All Items",
+   Callback = function()
+      local character = Players.LocalPlayer.Character
+      if not character or not character.PrimaryPart then return end
+      for _, v in pairs(Workspace:GetDescendants()) do
+          if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and v.PrimaryPart then
+              v.PrimaryPart.CFrame = character.PrimaryPart.CFrame
           end
       end
    end,
@@ -166,4 +208,62 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
    Range = {50, 200}, Increment = 10, Suffix = "Power",
    CurrentValue = 50, Flag = "JumpPower",
    Callback = function(Value) _G.JumpPower = Value end,
+})
+
+-- ========================
+-- LOOPS
+-- ========================
+task.spawn(function()
+    while task.wait() do
+        if _G.KillAuraEnabled then
+            local character = Players.LocalPlayer.Character
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local root = character.HumanoidRootPart
+                local distance = _G.AuraDistance or 25
+                local maxTargets = _G.MaxZombies or 5
+                local count = 0
+                
+                local monstersFolder = Workspace:FindFirstChild("Monsters")
+                if monstersFolder then
+                    for _, monster in pairs(monstersFolder:GetChildren()) do
+                        if count >= maxTargets then break end
+                        if monster:FindFirstChild("HumanoidRootPart") then
+                            local d = (root.Position - monster.HumanoidRootPart.Position).Magnitude
+                            if d < distance then
+                                pcall(function()
+                                    ZAP.meleeAttack.fire({
+                                        monsters = {monster},
+                                        civilians = {},
+                                        activeSlot = 1
+                                    })
+                                end)
+                                count = count + 1
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait() do
+        local character = Players.LocalPlayer.Character
+        if character and character:FindFirstChild("Humanoid") then
+            local humanoid = character.Humanoid
+            if _G.WalkSpeed then humanoid.WalkSpeed = _G.WalkSpeed end
+            if _G.JumpPower then
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = _G.JumpPower
+            end
+        end
+    end
+end)
+
+Rayfield:Notify({
+   Title = "Bake or Die Script Loaded",
+   Content = "Scanner & Original Logic Restored.",
+   Duration = 5,
+   Image = 4483362458,
 })
