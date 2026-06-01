@@ -2,7 +2,7 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 _G.KillAuraEnabled = false
 _G.AuraDistance = 25
-_G.MaxZombies = 5
+_G.MaxZombies = 15
 _G.WalkSpeed = 16
 _G.JumpPower = 50
 
@@ -57,7 +57,7 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
    Range = {1, 15},
    Increment = 1,
    Suffix = "Targets",
-   CurrentValue = 5,
+   CurrentValue = 15,
    Flag = "MaxZombies",
    Callback = function(Value)
       _G.MaxZombies = Value
