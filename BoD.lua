@@ -5,6 +5,8 @@ _G.AuraDistance = 25
 _G.MaxZombies = 5
 _G.WalkSpeed = 16
 _G.JumpPower = 50
+_G.AutoPickupEnabled = false -- New Global
+_G.PickupRadius = 20 -- New Global
 
 local Window = Rayfield:CreateWindow({
    Name = "MvP",
@@ -64,6 +66,29 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
 local ItemsTab = Window:CreateTab("Items", 4483362458)
 ItemsTab:CreateSection("Item Management")
 
+-- New Auto Pickup Toggle
+local AutoPickupToggle = ItemsTab:CreateToggle({
+   Name = "Auto Pickup",
+   CurrentValue = false,
+   Flag = "AutoPickupToggle",
+   Callback = function(Value)
+      _G.AutoPickupEnabled = Value
+   end,
+})
+
+-- New Pickup Radius Slider
+local PickupRadiusSlider = ItemsTab:CreateSlider({
+   Name = "Pickup Radius",
+   Range = {5, 100},
+   Increment = 1,
+   Suffix = "Studs",
+   CurrentValue = 20,
+   Flag = "PickupRadius",
+   Callback = function(Value)
+      _G.PickupRadius = Value
+   end,
+})
+
 local BringBodiesButton = ItemsTab:CreateButton({
    Name = "Bring Bodies",
    Callback = function()
@@ -122,6 +147,7 @@ local JumpPowerSlider = PlayerTab:CreateSlider({
    end,
 })
 
+-- Existing Kill Aura Loop
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -152,6 +178,33 @@ task.spawn(function()
     end
 end)
 
+-- NEW Auto Pickup Loop
+task.spawn(function()
+    while true do
+        if _G.AutoPickupEnabled then
+            local character = Players.LocalPlayer.Character
+            if character and character.PrimaryPart then
+                local root = character.PrimaryPart
+                local radius = _G.PickupRadius or 20
+                
+                for _, v in pairs(workspace.Interactables:GetChildren()) do
+                    if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and v.PrimaryPart then
+                        local itemRoot = v.PrimaryPart
+                        local distance = (root.Position - itemRoot.Position).Magnitude
+                        
+                        if distance <= radius then
+                            -- Move item to player
+                            itemRoot.CFrame = root.CFrame
+                        end
+                    end
+                end
+            end
+        end
+        task.wait(0.1) -- Slightly faster wait for smoother pickup
+    end
+end)
+
+-- Existing Character Stats Loop
 task.spawn(function()
     while true do
         local character = Players.LocalPlayer.Character
