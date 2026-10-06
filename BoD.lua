@@ -1,23 +1,34 @@
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
+-- Load Amethyst UI (with minimize support)
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
 
+-- Global settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
 _G.WalkSpeed = 16
 _G.JumpPower = 80
 
-local Window = Library:Window({
+-- Create window (minimize via ToggleUIKeybind)
+local Window = Library:CreateWindow({
     Name = "MvP",
-    SubName = "BakeOrDie",
-    Logo = "123456789",
-    MenuKeybind = Enum.KeyCode.End
+    LoadingTitle = "MvP Interface",
+    LoadingSubtitle = "Loaded Successfully",
+    ToggleUIKeybind = Enum.KeyCode.K,
+
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BakeOrDie",
+        FileName = "BakeConfig"
+    }
 })
 
+-- Services and remotes
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
+-- Apply movement settings
 local function applyMovementSettings(character)
     if not character then return end
     local humanoid = character:WaitForChild("Humanoid", 5)
@@ -39,46 +50,48 @@ if LocalPlayer.Character then
     end)
 end
 
-local CombatPage = Window:Page({Name = "Combat", Icon = "rbxassetid://123"})
-local CombatSection = CombatPage:Section({Name = "Kill Aura", Side = 1})
+-- ========== Combat Tab ==========
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local CombatSection = CombatTab:CreateSection("Kill Aura")
 
-CombatSection:Toggle({
+CombatSection:CreateToggle({
     Name = "Kill Aura",
+    CurrentValue = false,
     Flag = "KillAuraToggle",
-    Default = false,
     Callback = function(Value)
         _G.KillAuraEnabled = Value
     end,
 })
 
-CombatSection:Slider({
+CombatSection:CreateSlider({
     Name = "Kill Aura Distance",
-    Flag = "AuraDistance",
     Min = 10,
     Max = 1500,
     Default = 250,
-    Suffix = " studs",
+    Suffix = " Studs",
+    Flag = "AuraDistance",
     Callback = function(Value)
         _G.AuraDistance = Value
     end,
 })
 
-CombatSection:Slider({
+CombatSection:CreateSlider({
     Name = "Max Zombies per Tick",
-    Flag = "MaxZombies",
     Min = 1,
     Max = 15,
     Default = 15,
-    Suffix = " targets",
+    Suffix = " Targets",
+    Flag = "MaxZombies",
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
-local ItemsPage = Window:Page({Name = "Items", Icon = "rbxassetid://123"})
-local ItemsSection = ItemsPage:Section({Name = "Item Management", Side = 1})
+-- ========== Items Tab ==========
+local ItemsTab = Window:CreateTab("Items", 4483362458)
+local ItemsSection = ItemsTab:CreateSection("Item Management")
 
-ItemsSection:Button({
+ItemsSection:CreateButton({
     Name = "Bring Bodies",
     Callback = function()
         local character = LocalPlayer.Character
@@ -96,7 +109,7 @@ ItemsSection:Button({
     end,
 })
 
-ItemsSection:Button({
+ItemsSection:CreateButton({
     Name = "Bring All Items",
     Callback = function()
         local character = LocalPlayer.Character
@@ -109,44 +122,49 @@ ItemsSection:Button({
     end,
 })
 
-local PlayerPage = Window:Page({Name = "Player", Icon = "rbxassetid://123"})
-local PlayerSection = PlayerPage:Section({Name = "Character Settings", Side = 1})
+-- ========== Player Tab ==========
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local PlayerSection = PlayerTab:CreateSection("Character Settings")
 
-PlayerSection:Slider({
+PlayerSection:CreateSlider({
     Name = "WalkSpeed",
-    Flag = "WalkSpeed",
     Min = 16,
     Max = 200,
     Default = 16,
-    Suffix = " speed",
+    Suffix = " Speed",
+    Flag = "WalkSpeed",
     Callback = function(Value)
         _G.WalkSpeed = Value
-        if LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then humanoid.WalkSpeed = Value end
+        -- Get fresh reference every time to prevent stale Humanoid after respawn
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = Value end
         end
     end,
 })
 
-PlayerSection:Slider({
+PlayerSection:CreateSlider({
     Name = "JumpPower",
-    Flag = "JumpPower",
     Min = 50,
     Max = 200,
     Default = 80,
-    Suffix = " power",
+    Suffix = " Power",
+    Flag = "JumpPower",
     Callback = function(Value)
         _G.JumpPower = Value
-        if LocalPlayer.Character then
-            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.UseJumpPower = true
-                humanoid.JumpPower = Value
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.UseJumpPower = true
+                hum.JumpPower = Value
             end
         end
     end,
 })
 
+-- ========== Kill Aura Loop ==========
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -180,11 +198,12 @@ task.spawn(function()
     end
 end)
 
+-- ========== Movement Stability Loop (strengthened version) ==========
 task.spawn(function()
     while true do
         local character = LocalPlayer.Character
         if character then
-            local humanoid = character:FindFirstChild("Humanoid")
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
             if humanoid then
                 if math.abs(humanoid.WalkSpeed - _G.WalkSpeed) > 0.1 then
                     humanoid.WalkSpeed = _G.WalkSpeed
@@ -195,6 +214,6 @@ task.spawn(function()
                 end
             end
         end
-        task.wait(0.2)
+        task.wait(0.1) -- Faster tick, better adapted for mobile
     end
 end)
