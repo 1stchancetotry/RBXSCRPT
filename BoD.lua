@@ -1,17 +1,16 @@
-local HelixiaLIB = loadstring(game:HttpGet("https://raw.githubusercontent.com/topraqk11/Helixia-LIBRARY/refs/heads/main/library/source"))()
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ImInsane-1337/neverlose-ui/refs/heads/main/source/library.lua"))()
 
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
-_G.NoclipEnabled = false
-_G.VFlyEnabled = false
-_G.FlySpeed = 50
+_G.WalkSpeed = 16
+_G.JumpPower = 80
 
-local win = HelixiaLIB:CreateWindow({
-    Title    = "MvP",
-    SubTitle = "BakeOrDie",
-    Icon     = "rbxassetid://102278873791566",
-    Size     = Vector2.new(860, 540),
+local Window = Library:Window({
+    Name = "MvP",
+    SubName = "BakeOrDie",
+    Logo = "123456789",
+    MenuKeybind = Enum.KeyCode.End
 })
 
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
@@ -19,48 +18,68 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- ===== COMBAT TAB =====
-local CombatTab = win:CreateTab({Name = "Combat", Icon = "rbxassetid://138525646531017"})
-CombatTab:CreateSection("Kill Aura")
+local function applyMovementSettings(character)
+    if not character then return end
+    local humanoid = character:WaitForChild("Humanoid", 5)
+    if humanoid then
+        humanoid.UseJumpPower = true
+        humanoid.WalkSpeed = _G.WalkSpeed
+        humanoid.JumpPower = _G.JumpPower
+    end
+end
 
-CombatTab:CreateToggle({
-    Text     = "Kill Aura",
-    Default  = false,
+LocalPlayer.CharacterAdded:Connect(function(character)
+    character:WaitForChild("HumanoidRootPart")
+    applyMovementSettings(character)
+end)
+
+if LocalPlayer.Character then
+    task.spawn(function()
+        applyMovementSettings(LocalPlayer.Character)
+    end)
+end
+
+local CombatPage = Window:Page({Name = "Combat", Icon = "rbxassetid://123"})
+local CombatSection = CombatPage:Section({Name = "Kill Aura", Side = 1})
+
+CombatSection:Toggle({
+    Name = "Kill Aura",
+    Flag = "KillAuraToggle",
+    Default = false,
     Callback = function(Value)
         _G.KillAuraEnabled = Value
     end,
 })
 
-CombatTab:CreateSlider({
-    Text     = "Kill Aura Distance",
-    Min      = 10,
-    Max      = 1500,
-    Default  = 250,
-    Increment = 50,
-    Suffix   = " Studs",
+CombatSection:Slider({
+    Name = "Kill Aura Distance",
+    Flag = "AuraDistance",
+    Min = 10,
+    Max = 1500,
+    Default = 250,
+    Suffix = " studs",
     Callback = function(Value)
         _G.AuraDistance = Value
     end,
 })
 
-CombatTab:CreateSlider({
-    Text     = "Max Zombies per Tick",
-    Min      = 1,
-    Max      = 15,
-    Default  = 15,
-    Increment = 1,
-    Suffix   = " Targets",
+CombatSection:Slider({
+    Name = "Max Zombies per Tick",
+    Flag = "MaxZombies",
+    Min = 1,
+    Max = 15,
+    Default = 15,
+    Suffix = " targets",
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
--- ===== ITEMS TAB =====
-local ItemsTab = win:CreateTab({Name = "Items", Icon = "rbxassetid://138525646531017"})
-ItemsTab:CreateSection("Item Management")
+local ItemsPage = Window:Page({Name = "Items", Icon = "rbxassetid://123"})
+local ItemsSection = ItemsPage:Section({Name = "Item Management", Side = 1})
 
-ItemsTab:CreateButton({
-    Text     = "Bring Bodies",
+ItemsSection:Button({
+    Name = "Bring Bodies",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -77,8 +96,8 @@ ItemsTab:CreateButton({
     end,
 })
 
-ItemsTab:CreateButton({
-    Text     = "Bring All Items",
+ItemsSection:Button({
+    Name = "Bring All Items",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -90,48 +109,44 @@ ItemsTab:CreateButton({
     end,
 })
 
--- ===== PLAYER TAB =====
-local PlayerTab = win:CreateTab({Name = "Player", Icon = "rbxassetid://138525646531017"})
-PlayerTab:CreateSection("Movement")
+local PlayerPage = Window:Page({Name = "Player", Icon = "rbxassetid://123"})
+local PlayerSection = PlayerPage:Section({Name = "Character Settings", Side = 1})
 
-PlayerTab:CreateToggle({
-    Text     = "Noclip",
-    Default  = false,
+PlayerSection:Slider({
+    Name = "WalkSpeed",
+    Flag = "WalkSpeed",
+    Min = 16,
+    Max = 200,
+    Default = 16,
+    Suffix = " speed",
     Callback = function(Value)
-        _G.NoclipEnabled = Value
+        _G.WalkSpeed = Value
+        if LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then humanoid.WalkSpeed = Value end
+        end
     end,
 })
 
-PlayerTab:CreateToggle({
-    Text     = "VFly",
-    Default  = false,
+PlayerSection:Slider({
+    Name = "JumpPower",
+    Flag = "JumpPower",
+    Min = 50,
+    Max = 200,
+    Default = 80,
+    Suffix = " power",
     Callback = function(Value)
-        _G.VFlyEnabled = Value
-        if not Value then
-            local char = LocalPlayer.Character
-            if char then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.AssemblyLinearVelocity = Vector3.zero
-                end
+        _G.JumpPower = Value
+        if LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid.UseJumpPower = true
+                humanoid.JumpPower = Value
             end
         end
     end,
 })
 
-PlayerTab:CreateSlider({
-    Text     = "Fly Speed",
-    Min      = 10,
-    Max      = 300,
-    Default  = 50,
-    Increment = 5,
-    Suffix   = " Speed",
-    Callback = function(Value)
-        _G.FlySpeed = Value
-    end,
-})
-
--- ===== KILL AURA LOOP =====
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -165,61 +180,21 @@ task.spawn(function()
     end
 end)
 
--- ===== NOCLIP LOOP =====
 task.spawn(function()
     while true do
-        if _G.NoclipEnabled then
-            local character = LocalPlayer.Character
-            if character then
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") and part.CanCollide then
-                        part.CanCollide = false
-                    end
+        local character = LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChild("Humanoid")
+            if humanoid then
+                if math.abs(humanoid.WalkSpeed - _G.WalkSpeed) > 0.1 then
+                    humanoid.WalkSpeed = _G.WalkSpeed
+                end
+                if math.abs(humanoid.JumpPower - _G.JumpPower) > 0.1 then
+                    humanoid.UseJumpPower = true
+                    humanoid.JumpPower = _G.JumpPower
                 end
             end
         end
         task.wait(0.2)
     end
 end)
-
--- ===== VFLY LOOP =====
-task.spawn(function()
-    while true do
-        if _G.VFlyEnabled then
-            local character = LocalPlayer.Character
-            if character then
-                local root = character:FindFirstChild("HumanoidRootPart")
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if root and humanoid then
-                    local camera = workspace.CurrentCamera
-                    local moveDir = Vector3.zero
-                    local UIS = game:GetService("UserInputService")
-                    if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir += camera.CFrame.LookVector end
-                    if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir -= camera.CFrame.LookVector end
-                    if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir -= camera.CFrame.RightVector end
-                    if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir += camera.CFrame.RightVector end
-                    if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
-                    if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
-                    local mobileMove = humanoid.MoveDirection
-                    if mobileMove.Magnitude > 0 then
-                        moveDir += mobileMove
-                    end
-                    if moveDir.Magnitude > 0 then
-                        root.AssemblyLinearVelocity = moveDir.Unit * _G.FlySpeed
-                    else
-                        root.AssemblyLinearVelocity = Vector3.zero
-                    end
-                end
-            end
-        end
-        task.wait()
-    end
-end)
-
--- ===== LOAD NOTIFICATION =====
-HelixiaLIB:Notify({
-    Title    = "MvP Loaded",
-    Message  = "All features ready.",
-    Type     = "Success",
-    Duration = 3,
-})
