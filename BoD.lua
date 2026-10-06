@@ -1,3 +1,4 @@
+-- Amethyst UI (Mobile Optimized)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
 
 _G.KillAuraEnabled = false
@@ -9,14 +10,9 @@ _G.FlySpeed = 50
 
 local Window = Library:CreateWindow({
     Name = "MvP",
-    LoadingTitle = "MvP Interface",
-    LoadingSubtitle = "Loaded Successfully",
-    ToggleUIKeybind = Enum.KeyCode.K,
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "BakeOrDie",
-        FileName = "BakeConfig"
-    }
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "BakeOrDie",
+    ToggleUIKeybind = Enum.KeyCode.K
 })
 
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
@@ -24,7 +20,7 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- ========== Combat Tab ==========
+-- COMBAT TAB
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 local CombatSection = CombatTab:CreateSection("Kill Aura")
 
@@ -61,7 +57,7 @@ CombatSection:CreateSlider({
     end,
 })
 
--- ========== Items Tab ==========
+-- ITEMS TAB
 local ItemsTab = Window:CreateTab("Items", 4483362458)
 local ItemsSection = ItemsTab:CreateSection("Item Management")
 
@@ -96,7 +92,7 @@ ItemsSection:CreateButton({
     end,
 })
 
--- ========== Player Tab ==========
+-- PLAYER TAB
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 local PlayerSection = PlayerTab:CreateSection("Movement")
 
@@ -115,7 +111,6 @@ PlayerSection:CreateToggle({
     Flag = "VFlyToggle",
     Callback = function(Value)
         _G.VFlyEnabled = Value
-        -- Stop velocity when turning off
         if not Value then
             local char = LocalPlayer.Character
             if char then
@@ -140,7 +135,7 @@ PlayerSection:CreateSlider({
     end,
 })
 
--- ========== Kill Aura Loop ==========
+-- KILL AURA LOOP
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -174,7 +169,7 @@ task.spawn(function()
     end
 end)
 
--- ========== Noclip Loop ==========
+-- NOCLIP LOOP
 task.spawn(function()
     while true do
         if _G.NoclipEnabled then
@@ -191,7 +186,7 @@ task.spawn(function()
     end
 end)
 
--- ========== VFly Loop ==========
+-- VFLY LOOP
 task.spawn(function()
     while true do
         if _G.VFlyEnabled then
@@ -202,8 +197,6 @@ task.spawn(function()
                 if root and humanoid then
                     local camera = workspace.CurrentCamera
                     local moveDir = Vector3.zero
-
-                    -- PC keyboard controls
                     local UIS = game:GetService("UserInputService")
                     if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir += camera.CFrame.LookVector end
                     if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir -= camera.CFrame.LookVector end
@@ -211,13 +204,10 @@ task.spawn(function()
                     if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir += camera.CFrame.RightVector end
                     if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
                     if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
-
-                    -- Mobile thumbstick support
                     local mobileMove = humanoid.MoveDirection
                     if mobileMove.Magnitude > 0 then
                         moveDir += mobileMove
                     end
-
                     if moveDir.Magnitude > 0 then
                         root.AssemblyLinearVelocity = moveDir.Unit * _G.FlySpeed
                     else
