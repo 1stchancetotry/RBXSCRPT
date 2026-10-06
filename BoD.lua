@@ -1,6 +1,5 @@
 local HelixiaLIB = loadstring(game:HttpGet("https://raw.githubusercontent.com/topraqk11/Helixia-LIBRARY/refs/heads/main/library/source"))()
 
--- Global Settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
@@ -8,7 +7,6 @@ _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
 
--- Create Window
 local win = HelixiaLIB:CreateWindow({
     Title    = "MvP",
     SubTitle = "BakeOrDie",
@@ -21,8 +19,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- COMBAT TAB
+-- ===== COMBAT TAB =====
 local CombatTab = win:CreateTab({Name = "Combat", Icon = "rbxassetid://138525646531017"})
+CombatTab:CreateSection("Kill Aura")
 
 CombatTab:CreateToggle({
     Text     = "Kill Aura",
@@ -37,6 +36,7 @@ CombatTab:CreateSlider({
     Min      = 10,
     Max      = 1500,
     Default  = 250,
+    Increment = 50,
     Suffix   = " Studs",
     Callback = function(Value)
         _G.AuraDistance = Value
@@ -48,14 +48,16 @@ CombatTab:CreateSlider({
     Min      = 1,
     Max      = 15,
     Default  = 15,
+    Increment = 1,
     Suffix   = " Targets",
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
--- ITEMS TAB
+-- ===== ITEMS TAB =====
 local ItemsTab = win:CreateTab({Name = "Items", Icon = "rbxassetid://138525646531017"})
+ItemsTab:CreateSection("Item Management")
 
 ItemsTab:CreateButton({
     Text     = "Bring Bodies",
@@ -88,8 +90,9 @@ ItemsTab:CreateButton({
     end,
 })
 
--- PLAYER TAB
+-- ===== PLAYER TAB =====
 local PlayerTab = win:CreateTab({Name = "Player", Icon = "rbxassetid://138525646531017"})
+PlayerTab:CreateSection("Movement")
 
 PlayerTab:CreateToggle({
     Text     = "Noclip",
@@ -121,13 +124,14 @@ PlayerTab:CreateSlider({
     Min      = 10,
     Max      = 300,
     Default  = 50,
+    Increment = 5,
     Suffix   = " Speed",
     Callback = function(Value)
         _G.FlySpeed = Value
     end,
 })
 
--- KILL AURA LOOP
+-- ===== KILL AURA LOOP =====
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -161,7 +165,7 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP LOOP
+-- ===== NOCLIP LOOP =====
 task.spawn(function()
     while true do
         if _G.NoclipEnabled then
@@ -178,7 +182,7 @@ task.spawn(function()
     end
 end)
 
--- VFLY LOOP
+-- ===== VFLY LOOP =====
 task.spawn(function()
     while true do
         if _G.VFlyEnabled then
@@ -211,3 +215,11 @@ task.spawn(function()
         task.wait()
     end
 end)
+
+-- ===== LOAD NOTIFICATION =====
+HelixiaLIB:Notify({
+    Title    = "MvP Loaded",
+    Message  = "All features ready.",
+    Type     = "Success",
+    Duration = 3,
+})
