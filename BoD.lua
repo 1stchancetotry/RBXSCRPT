@@ -1,6 +1,6 @@
--- Amethyst UI (Mobile Optimized)
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
+local HelixiaLIB = loadstring(game:HttpGet("https://raw.githubusercontent.com/topraqk11/Helixia-LIBRARY/refs/heads/main/library/source"))()
 
+-- Global Settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
@@ -8,11 +8,12 @@ _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
 
-local Window = Library:CreateWindow({
-    Name = "MvP",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "BakeOrDie",
-    ToggleUIKeybind = Enum.KeyCode.K
+-- Create Window
+local win = HelixiaLIB:CreateWindow({
+    Title    = "MvP",
+    SubTitle = "BakeOrDie",
+    Icon     = "rbxassetid://102278873791566",
+    Size     = Vector2.new(860, 540),
 })
 
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
@@ -21,48 +22,43 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- COMBAT TAB
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-local CombatSection = CombatTab:CreateSection("Kill Aura")
+local CombatTab = win:CreateTab({Name = "Combat", Icon = "rbxassetid://138525646531017"})
 
-CombatSection:CreateToggle({
-    Name = "Kill Aura",
-    CurrentValue = false,
-    Flag = "KillAuraToggle",
+CombatTab:CreateToggle({
+    Text     = "Kill Aura",
+    Default  = false,
     Callback = function(Value)
         _G.KillAuraEnabled = Value
     end,
 })
 
-CombatSection:CreateSlider({
-    Name = "Kill Aura Distance",
-    Min = 10,
-    Max = 1500,
-    Default = 250,
-    Suffix = " Studs",
-    Flag = "AuraDistance",
+CombatTab:CreateSlider({
+    Text     = "Kill Aura Distance",
+    Min      = 10,
+    Max      = 1500,
+    Default  = 250,
+    Suffix   = " Studs",
     Callback = function(Value)
         _G.AuraDistance = Value
     end,
 })
 
-CombatSection:CreateSlider({
-    Name = "Max Zombies per Tick",
-    Min = 1,
-    Max = 15,
-    Default = 15,
-    Suffix = " Targets",
-    Flag = "MaxZombies",
+CombatTab:CreateSlider({
+    Text     = "Max Zombies per Tick",
+    Min      = 1,
+    Max      = 15,
+    Default  = 15,
+    Suffix   = " Targets",
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
 -- ITEMS TAB
-local ItemsTab = Window:CreateTab("Items", 4483362458)
-local ItemsSection = ItemsTab:CreateSection("Item Management")
+local ItemsTab = win:CreateTab({Name = "Items", Icon = "rbxassetid://138525646531017"})
 
-ItemsSection:CreateButton({
-    Name = "Bring Bodies",
+ItemsTab:CreateButton({
+    Text     = "Bring Bodies",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -79,8 +75,8 @@ ItemsSection:CreateButton({
     end,
 })
 
-ItemsSection:CreateButton({
-    Name = "Bring All Items",
+ItemsTab:CreateButton({
+    Text     = "Bring All Items",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -93,22 +89,19 @@ ItemsSection:CreateButton({
 })
 
 -- PLAYER TAB
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-local PlayerSection = PlayerTab:CreateSection("Movement")
+local PlayerTab = win:CreateTab({Name = "Player", Icon = "rbxassetid://138525646531017"})
 
-PlayerSection:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Flag = "NoclipToggle",
+PlayerTab:CreateToggle({
+    Text     = "Noclip",
+    Default  = false,
     Callback = function(Value)
         _G.NoclipEnabled = Value
     end,
 })
 
-PlayerSection:CreateToggle({
-    Name = "VFly",
-    CurrentValue = false,
-    Flag = "VFlyToggle",
+PlayerTab:CreateToggle({
+    Text     = "VFly",
+    Default  = false,
     Callback = function(Value)
         _G.VFlyEnabled = Value
         if not Value then
@@ -123,13 +116,12 @@ PlayerSection:CreateToggle({
     end,
 })
 
-PlayerSection:CreateSlider({
-    Name = "Fly Speed",
-    Min = 10,
-    Max = 300,
-    Default = 50,
-    Suffix = " Speed",
-    Flag = "FlySpeed",
+PlayerTab:CreateSlider({
+    Text     = "Fly Speed",
+    Min      = 10,
+    Max      = 300,
+    Default  = 50,
+    Suffix   = " Speed",
     Callback = function(Value)
         _G.FlySpeed = Value
     end,
