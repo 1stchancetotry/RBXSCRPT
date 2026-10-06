@@ -1,20 +1,17 @@
--- Load Amethyst UI (with minimize support)
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
 
--- Global settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
-_G.WalkSpeed = 16
-_G.JumpPower = 80
+_G.NoclipEnabled = false
+_G.VFlyEnabled = false
+_G.FlySpeed = 50
 
--- Create window (minimize via ToggleUIKeybind)
 local Window = Library:CreateWindow({
     Name = "MvP",
     LoadingTitle = "MvP Interface",
     LoadingSubtitle = "Loaded Successfully",
     ToggleUIKeybind = Enum.KeyCode.K,
-
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "BakeOrDie",
@@ -22,33 +19,10 @@ local Window = Library:CreateWindow({
     }
 })
 
--- Services and remotes
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-
--- Apply movement settings
-local function applyMovementSettings(character)
-    if not character then return end
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    if humanoid then
-        humanoid.UseJumpPower = true
-        humanoid.WalkSpeed = _G.WalkSpeed
-        humanoid.JumpPower = _G.JumpPower
-    end
-end
-
-LocalPlayer.CharacterAdded:Connect(function(character)
-    character:WaitForChild("HumanoidRootPart")
-    applyMovementSettings(character)
-end)
-
-if LocalPlayer.Character then
-    task.spawn(function()
-        applyMovementSettings(LocalPlayer.Character)
-    end)
-end
 
 -- ========== Combat Tab ==========
 local CombatTab = Window:CreateTab("Combat", 4483362458)
@@ -124,43 +98,45 @@ ItemsSection:CreateButton({
 
 -- ========== Player Tab ==========
 local PlayerTab = Window:CreateTab("Player", 4483362458)
-local PlayerSection = PlayerTab:CreateSection("Character Settings")
+local PlayerSection = PlayerTab:CreateSection("Movement")
 
-PlayerSection:CreateSlider({
-    Name = "WalkSpeed",
-    Min = 16,
-    Max = 200,
-    Default = 16,
-    Suffix = " Speed",
-    Flag = "WalkSpeed",
+PlayerSection:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
     Callback = function(Value)
-        _G.WalkSpeed = Value
-        -- Get fresh reference every time to prevent stale Humanoid after respawn
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then hum.WalkSpeed = Value end
+        _G.NoclipEnabled = Value
+    end,
+})
+
+PlayerSection:CreateToggle({
+    Name = "VFly",
+    CurrentValue = false,
+    Flag = "VFlyToggle",
+    Callback = function(Value)
+        _G.VFlyEnabled = Value
+        -- Stop velocity when turning off
+        if not Value then
+            local char = LocalPlayer.Character
+            if char then
+                local root = char:FindFirstChild("HumanoidRootPart")
+                if root then
+                    root.AssemblyLinearVelocity = Vector3.zero
+                end
+            end
         end
     end,
 })
 
 PlayerSection:CreateSlider({
-    Name = "JumpPower",
-    Min = 50,
-    Max = 200,
-    Default = 80,
-    Suffix = " Power",
-    Flag = "JumpPower",
+    Name = "Fly Speed",
+    Min = 10,
+    Max = 300,
+    Default = 50,
+    Suffix = " Speed",
+    Flag = "FlySpeed",
     Callback = function(Value)
-        _G.JumpPower = Value
-        local char = LocalPlayer.Character
-        if char then
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                hum.UseJumpPower = true
-                hum.JumpPower = Value
-            end
-        end
+        _G.FlySpeed = Value
     end,
 })
 
@@ -198,22 +174,58 @@ task.spawn(function()
     end
 end)
 
--- ========== Movement Stability Loop (strengthened version) ==========
+-- ========== Noclip Loop ==========
 task.spawn(function()
     while true do
-        local character = LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                if math.abs(humanoid.WalkSpeed - _G.WalkSpeed) > 0.1 then
-                    humanoid.WalkSpeed = _G.WalkSpeed
-                end
-                if math.abs(humanoid.JumpPower - _G.JumpPower) > 0.1 then
-                    humanoid.UseJumpPower = true
-                    humanoid.JumpPower = _G.JumpPower
+        if _G.NoclipEnabled then
+            local character = LocalPlayer.Character
+            if character then
+                for _, part in pairs(character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.CanCollide then
+                        part.CanCollide = false
+                    end
                 end
             end
         end
-        task.wait(0.1) -- Faster tick, better adapted for mobile
+        task.wait(0.2)
+    end
+end)
+
+-- ========== VFly Loop ==========
+task.spawn(function()
+    while true do
+        if _G.VFlyEnabled then
+            local character = LocalPlayer.Character
+            if character then
+                local root = character:FindFirstChild("HumanoidRootPart")
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if root and humanoid then
+                    local camera = workspace.CurrentCamera
+                    local moveDir = Vector3.zero
+
+                    -- PC keyboard controls
+                    local UIS = game:GetService("UserInputService")
+                    if UIS:IsKeyDown(Enum.KeyCode.W) then moveDir += camera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.S) then moveDir -= camera.CFrame.LookVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.A) then moveDir -= camera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.D) then moveDir += camera.CFrame.RightVector end
+                    if UIS:IsKeyDown(Enum.KeyCode.Space) then moveDir += Vector3.new(0, 1, 0) end
+                    if UIS:IsKeyDown(Enum.KeyCode.LeftShift) then moveDir -= Vector3.new(0, 1, 0) end
+
+                    -- Mobile thumbstick support
+                    local mobileMove = humanoid.MoveDirection
+                    if mobileMove.Magnitude > 0 then
+                        moveDir += mobileMove
+                    end
+
+                    if moveDir.Magnitude > 0 then
+                        root.AssemblyLinearVelocity = moveDir.Unit * _G.FlySpeed
+                    else
+                        root.AssemblyLinearVelocity = Vector3.zero
+                    end
+                end
+            end
+        end
+        task.wait()
     end
 end)
