@@ -3109,7 +3109,7 @@ local function sanitizeConfigData(data)
     end
     if type(data.Config) ~= "table" then data.Config = {} end
     local numericFields = {
-        HitboxSize = {1, 60}, ZoomValue = {50, 2000},
+        HitboxSize = {1, 600}, ZoomValue = {50, 2000},
         AutoFarmDelay = {0.1, 3.0}, AutoClickerCPS = {1, 50},
         SpeedValue = {16, 500}, FlySpeed = {10, 500}, RadarRange = {100, 1000},
         KillAuraRange = {50, 1000}, KillAuraDelay = {0.01, 0.2},
