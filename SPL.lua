@@ -2392,7 +2392,7 @@ do
     end
 
     createToggle(pageHitbox, "tog_hitbox", false, toggleHitbox, "HitboxEnabled", "desc_hitbox")
-    createSlider(pageHitbox, "lbl_hitbox_size", 1, 60, 15, C.gold, function(v)
+    createSlider(pageHitbox, "lbl_hitbox_size", 1, 600, 15, C.gold, function(v)
         Config.HitboxSize = math.max(1, v)
         if Config.HitboxEnabled then expandHitbox() end
     end, "HitboxSize")
