@@ -75,7 +75,7 @@ local STR = {
     sec_theme="Theme", sec_controls="Controls", lbl_hide="Hide / show script", lbl_hide_desc="Click the button and press a key",
     sec_friends_notif="Friends (notifications)", btn_add_friend="Add friend",
     sec_social="Social", discord_open="Open →", discord_join="Join our group",
-    sec_about="About me", about_text="Script made by Hirago",
+    sec_about="About me", about_text="MvP",
     dlg_save_cfg="Save config", dlg_cfg_name="My config", dlg_cfg_name_ph="Name...",
     dlg_add_friend="Add friend", dlg_player_name="Player name...",
     dlg_enter="Enter...", dlg_cancel="Cancel", dlg_rename="Rename", dlg_new_name="New name...",
@@ -2406,15 +2406,31 @@ end
 makeSection(pageHitbox, "sec_kill_aura", "⚡")
 do
     local killAuraRunning = false
-    local function attackMob(data)
+
+    -- Attack pakai tool:Activate() HANYA, tanpa VirtualUser / mouse / teleport
+    local function attackMob()
         local char = LocalPlayer.Character
         if not char then return end
+
+        -- Auto-equip tool kalau belum ada
         local tool = char:FindFirstChildOfClass("Tool")
+        if not tool then
+            local bp = LocalPlayer:FindFirstChild("Backpack")
+            if bp then
+                local bpTool = bp:FindFirstChildOfClass("Tool")
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if bpTool and hum then
+                    pcall(function() hum:EquipTool(bpTool) end)
+                end
+            end
+        end
+
+        -- Attack pakai tool
         if tool then
             pcall(function() tool:Activate() end)
         end
-        clickLeftMouse()
     end
+
     local function startKillAura()
         if killAuraRunning then return end
         killAuraRunning = true
@@ -2423,22 +2439,23 @@ do
             while Config.KillAura and killAuraRunning and not isShuttingDown do
                 local char = LocalPlayer.Character
                 local myHrp = char and char:FindFirstChild("HumanoidRootPart")
-                if myHrp then
-                    local mobs = getAllMobs()
+                if myHrp and char then
                     local range = Config.KillAuraRange
-                    local inRange = {}
-                    for _, data in ipairs(mobs) do
+                    local myPos = myHrp.Position
+                    -- Kumpulkan semua mob dalam radius
+                    local mobsInRange = {}
+                    for _, data in ipairs(getAllMobs()) do
                         if data.hrp and data.hrp.Parent then
-                            local dist = (data.hrp.Position - myHrp.Position).Magnitude
+                            local dist = (data.hrp.Position - myPos).Magnitude
                             if dist <= range and not (data.hp and data.hp <= 0) then
-                                table.insert(inRange, {data=data, dist=dist})
+                                table.insert(mobsInRange, data)
                             end
                         end
                     end
-                    table.sort(inRange, function(a, b) return a.dist < b.dist end)
-                    for _, entry in ipairs(inRange) do
+                    -- Attack semua mob dalam radius
+                    for _, mob in ipairs(mobsInRange) do
                         if not Config.KillAura or isShuttingDown then break end
-                        pcall(attackMob, entry.data)
+                        pcall(attackMob)
                     end
                 end
                 task.wait(Config.KillAuraDelay)
@@ -2446,11 +2463,13 @@ do
             killAuraRunning = false
         end)
     end
+
     local function stopKillAura()
         Config.KillAura = false
         killAuraRunning = false
         showToast(T("toast_kill_aura_off"), C.warn, "⚡")
     end
+
     createToggle(pageHitbox, "tog_kill_aura", false, function(state)
         Config.KillAura = state
         if state then startKillAura() else stopKillAura() end
@@ -3594,7 +3613,7 @@ end
 
 makeSection(pageSettings, "sec_social", "💬")
 do
-    local DISCORD_URL = "https://discord.gg/K3ksDHaCdA"
+    local DISCORD_URL = ""
     local function copyToClipboard(text)
         pcall(function()
             if setclipboard then setclipboard(text)
