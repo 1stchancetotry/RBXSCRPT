@@ -1,6 +1,5 @@
--- Load PealLib
-local repo = 'https://raw.githubusercontent.com/pealz1/PealLib/main/'
-local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
+-- Load Rayfield UI Library
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 -- Global Settings
 _G.KillAuraEnabled = false
@@ -10,131 +9,145 @@ _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
 
--- Create Window
-local Window = Library:CreateWindow({
-    Title = "MvP",
-    SubTitle = "BakeOrDie"
+-- Initialize Rayfield Window
+local Window = Rayfield:CreateWindow({
+   Name = "MvP",
+   LoadingTitle = "MvP Interface",
+   LoadingSubtitle = "Loaded Successfully",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = "BakeOrDie",
+      FileName = "BakeConfig"
+   },
+   Discord = {
+      Enabled = false,
+      RememberJoins = true
+   },
+   KeySystem = false,
 })
 
--- Services
+-- Game Services & Remotes
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- ===== COMBAT TAB =====
-local CombatTab = Window:AddTab('Combat')
-local CombatBox = CombatTab:AddLeftGroupbox('Kill Aura')
+-- Combat Tab
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+CombatTab:CreateSection("Kill Aura")
 
-CombatBox:AddToggle('KillAura', {
-    Text = 'Kill Aura',
-    Default = false,
-    Callback = function(Value)
-        _G.KillAuraEnabled = Value
-    end,
+local KillAuraToggle = CombatTab:CreateToggle({
+   Name = "Kill Aura",
+   CurrentValue = false,
+   Flag = "KillAuraToggle",
+   Callback = function(Value)
+      _G.KillAuraEnabled = Value
+   end,
 })
 
-CombatBox:AddSlider('AuraDistance', {
-    Text = 'Kill Aura Distance',
-    Default = 250,
-    Min = 10,
-    Max = 1500,
-    Rounding = 0,
-    Suffix = ' studs',
-    Callback = function(Value)
-        _G.AuraDistance = Value
-    end,
+local AuraDistanceSlider = CombatTab:CreateSlider({
+   Name = "Kill Aura Distance",
+   Range = {10, 1500},
+   Increment = 50,
+   Suffix = "Studs",
+   CurrentValue = 250,
+   Flag = "AuraDistance",
+   Callback = function(Value)
+      _G.AuraDistance = Value
+   end,
 })
 
-CombatBox:AddSlider('MaxZombies', {
-    Text = 'Max Zombies per Tick',
-    Default = 15,
-    Min = 1,
-    Max = 15,
-    Rounding = 0,
-    Suffix = ' targets',
-    Callback = function(Value)
-        _G.MaxZombies = Value
-    end,
+local MaxZombiesSlider = CombatTab:CreateSlider({
+   Name = "Max Zombies per Tick",
+   Range = {1, 15},
+   Increment = 1,
+   Suffix = "Targets",
+   CurrentValue = 15,
+   Flag = "MaxZombies",
+   Callback = function(Value)
+      _G.MaxZombies = Value
+   end,
 })
 
--- ===== ITEMS TAB =====
-local ItemsTab = Window:AddTab('Items')
-local ItemsBox = ItemsTab:AddLeftGroupbox('Item Management')
+-- Items Tab
+local ItemsTab = Window:CreateTab("Items", 4483362458)
+ItemsTab:CreateSection("Item Management")
 
-ItemsBox:AddButton({
-    Text = 'Bring Bodies',
-    Func = function()
-        local character = LocalPlayer.Character
-        if not character or not character.PrimaryPart then return end
-        for _, v in pairs(workspace.Interactables:GetChildren()) do
-            if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
-                if v:FindFirstChild("Humanoid") or string.match(v.Name:lower(), "body") or string.match(v.Name:lower(), "corpse") then
-                    local root = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
-                    if root then
-                        root.CFrame = character.PrimaryPart.CFrame
-                    end
-                end
-            end
-        end
-    end,
+local BringBodiesButton = ItemsTab:CreateButton({
+   Name = "Bring Bodies",
+   Callback = function()
+      local character = LocalPlayer.Character
+      if not character or not character.PrimaryPart then return end
+      for _, v in pairs(workspace.Interactables:GetChildren()) do
+          if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") then
+              if v:FindFirstChild("Humanoid") or string.match(v.Name:lower(), "body") or string.match(v.Name:lower(), "corpse") then
+                  local root = v:FindFirstChild("HumanoidRootPart") or v.PrimaryPart
+                  if root then
+                      root.CFrame = character.PrimaryPart.CFrame
+                  end
+              end
+          end
+      end
+   end,
 })
 
-ItemsBox:AddButton({
-    Text = 'Bring All Items',
-    Func = function()
-        local character = LocalPlayer.Character
-        if not character or not character.PrimaryPart then return end
-        for _, v in pairs(workspace.Interactables:GetChildren()) do
-            if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and v.PrimaryPart then
-                v.PrimaryPart.CFrame = character.PrimaryPart.CFrame
-            end
-        end
-    end,
+local BringAllButton = ItemsTab:CreateButton({
+   Name = "Bring All Items",
+   Callback = function()
+      local character = LocalPlayer.Character
+      if not character or not character.PrimaryPart then return end
+      for _, v in pairs(workspace.Interactables:GetChildren()) do
+          if v:IsA("Model") and not v:FindFirstChild("ProductPriceTag") and v.PrimaryPart then
+              v.PrimaryPart.CFrame = character.PrimaryPart.CFrame
+          end
+      end
+   end,
 })
 
--- ===== PLAYER TAB =====
-local PlayerTab = Window:AddTab('Player')
-local PlayerBox = PlayerTab:AddLeftGroupbox('Movement')
+-- Player Tab
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+PlayerTab:CreateSection("Movement")
 
-PlayerBox:AddToggle('Noclip', {
-    Text = 'Noclip',
-    Default = false,
-    Callback = function(Value)
-        _G.NoclipEnabled = Value
-    end,
+local NoclipToggle = PlayerTab:CreateToggle({
+   Name = "Noclip",
+   CurrentValue = false,
+   Flag = "NoclipToggle",
+   Callback = function(Value)
+      _G.NoclipEnabled = Value
+   end,
 })
 
-PlayerBox:AddToggle('VFly', {
-    Text = 'VFly',
-    Default = false,
-    Callback = function(Value)
-        _G.VFlyEnabled = Value
-        if not Value then
-            local char = LocalPlayer.Character
-            if char then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root then
-                    root.AssemblyLinearVelocity = Vector3.zero
-                end
-            end
-        end
-    end,
+local VFlyToggle = PlayerTab:CreateToggle({
+   Name = "VFly",
+   CurrentValue = false,
+   Flag = "VFlyToggle",
+   Callback = function(Value)
+      _G.VFlyEnabled = Value
+      if not Value then
+          local char = LocalPlayer.Character
+          if char then
+              local root = char:FindFirstChild("HumanoidRootPart")
+              if root then
+                  root.AssemblyLinearVelocity = Vector3.zero
+              end
+          end
+      end
+   end,
 })
 
-PlayerBox:AddSlider('FlySpeed', {
-    Text = 'Fly Speed',
-    Default = 50,
-    Min = 10,
-    Max = 300,
-    Rounding = 0,
-    Suffix = ' speed',
-    Callback = function(Value)
-        _G.FlySpeed = Value
-    end,
+local FlySpeedSlider = PlayerTab:CreateSlider({
+   Name = "Fly Speed",
+   Range = {10, 300},
+   Increment = 10,
+   Suffix = "Speed",
+   CurrentValue = 50,
+   Flag = "FlySpeed",
+   Callback = function(Value)
+      _G.FlySpeed = Value
+   end,
 })
 
--- ===== KILL AURA LOOP =====
+-- Kill Aura Loop
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -144,6 +157,7 @@ task.spawn(function()
                 local distance = _G.AuraDistance or 250
                 local maxTargets = _G.MaxZombies or 15
                 local count = 0
+                
                 if workspace:FindFirstChild("Monsters") then
                     for _, monster in pairs(workspace.Monsters:GetChildren()) do
                         if count >= maxTargets then break end
@@ -168,7 +182,7 @@ task.spawn(function()
     end
 end)
 
--- ===== NOCLIP LOOP =====
+-- Noclip Loop
 task.spawn(function()
     while true do
         if _G.NoclipEnabled then
@@ -185,7 +199,7 @@ task.spawn(function()
     end
 end)
 
--- ===== VFLY LOOP =====
+-- VFly Loop
 task.spawn(function()
     while true do
         if _G.VFlyEnabled then
@@ -218,3 +232,17 @@ task.spawn(function()
         task.wait()
     end
 end)
+
+-- Final Notification
+Rayfield:Notify({
+   Title = "Script Loaded",
+   Content = "All features ready.",
+   Duration = 3,
+   Image = 4483362458,
+   Actions = {
+      Ignore = {
+         Name = "Okay!",
+         Callback = function() end
+      }
+   }
+})
