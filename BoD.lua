@@ -1,5 +1,7 @@
-local HelixiaLIB = loadstring(game:HttpGet("https://raw.githubusercontent.com/topraqk11/Helixia-LIBRARY/refs/heads/main/library/source"))()
+-- Load Amethyst UI
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
 
+-- Global Settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
@@ -7,66 +9,63 @@ _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
 
--- Hapus GUI Helixia lama kalau ada
-for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
-    if v.Name:lower():find("helixia") or v.Name == "HelixiaUI" then
-        v:Destroy()
-    end
-end
-
--- Smaller window size for mobile
-local win = HelixiaLIB:CreateWindow({
-    Title    = "MvP",
-    SubTitle = "BakeOrDie",
-    Icon     = "rbxassetid://102278873791566",
-    Size     = Vector2.new(500, 320),
+-- Create Window
+local Window = Library:CreateWindow({
+    Name = "MvP",
+    LoadingTitle = "Loading...",
+    LoadingSubtitle = "BakeOrDie",
+    ToggleUIKeybind = Enum.KeyCode.K
 })
 
+-- Services
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- COMBAT TAB (no section header)
-local CombatTab = win:CreateTab({Name = "Combat", Icon = "rbxassetid://138525646531017"})
+-- ===== COMBAT TAB =====
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+local CombatSection = CombatTab:CreateSection("Kill Aura")
 
-CombatTab:CreateToggle({
-    Text     = "Kill Aura",
-    Default  = false,
+CombatSection:CreateToggle({
+    Name = "Kill Aura",
+    CurrentValue = false,
+    Flag = "KillAuraToggle",
     Callback = function(Value)
         _G.KillAuraEnabled = Value
     end,
 })
 
-CombatTab:CreateSlider({
-    Text     = "Kill Aura Distance",
-    Min      = 10,
-    Max      = 1500,
-    Default  = 250,
-    Increment = 50,
-    Suffix   = " Studs",
+CombatSection:CreateSlider({
+    Name = "Kill Aura Distance",
+    Min = 10,
+    Max = 1500,
+    Default = 250,
+    Suffix = " Studs",
+    Flag = "AuraDistance",
     Callback = function(Value)
         _G.AuraDistance = Value
     end,
 })
 
-CombatTab:CreateSlider({
-    Text     = "Max Zombies per Tick",
-    Min      = 1,
-    Max      = 15,
-    Default  = 15,
-    Increment = 1,
-    Suffix   = " Targets",
+CombatSection:CreateSlider({
+    Name = "Max Zombies per Tick",
+    Min = 1,
+    Max = 15,
+    Default = 15,
+    Suffix = " Targets",
+    Flag = "MaxZombies",
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
--- ITEMS TAB
-local ItemsTab = win:CreateTab({Name = "Items", Icon = "rbxassetid://138525646531017"})
+-- ===== ITEMS TAB =====
+local ItemsTab = Window:CreateTab("Items", 4483362458)
+local ItemsSection = ItemsTab:CreateSection("Item Management")
 
-ItemsTab:CreateButton({
-    Text     = "Bring Bodies",
+ItemsSection:CreateButton({
+    Name = "Bring Bodies",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -83,8 +82,8 @@ ItemsTab:CreateButton({
     end,
 })
 
-ItemsTab:CreateButton({
-    Text     = "Bring All Items",
+ItemsSection:CreateButton({
+    Name = "Bring All Items",
     Callback = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
@@ -96,20 +95,23 @@ ItemsTab:CreateButton({
     end,
 })
 
--- PLAYER TAB
-local PlayerTab = win:CreateTab({Name = "Player", Icon = "rbxassetid://138525646531017"})
+-- ===== PLAYER TAB =====
+local PlayerTab = Window:CreateTab("Player", 4483362458)
+local PlayerSection = PlayerTab:CreateSection("Movement")
 
-PlayerTab:CreateToggle({
-    Text     = "Noclip",
-    Default  = false,
+PlayerSection:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "NoclipToggle",
     Callback = function(Value)
         _G.NoclipEnabled = Value
     end,
 })
 
-PlayerTab:CreateToggle({
-    Text     = "VFly",
-    Default  = false,
+PlayerSection:CreateToggle({
+    Name = "VFly",
+    CurrentValue = false,
+    Flag = "VFlyToggle",
     Callback = function(Value)
         _G.VFlyEnabled = Value
         if not Value then
@@ -124,19 +126,19 @@ PlayerTab:CreateToggle({
     end,
 })
 
-PlayerTab:CreateSlider({
-    Text     = "Fly Speed",
-    Min      = 10,
-    Max      = 300,
-    Default  = 50,
-    Increment = 5,
-    Suffix   = " Speed",
+PlayerSection:CreateSlider({
+    Name = "Fly Speed",
+    Min = 10,
+    Max = 300,
+    Default = 50,
+    Suffix = " Speed",
+    Flag = "FlySpeed",
     Callback = function(Value)
         _G.FlySpeed = Value
     end,
 })
 
--- KILL AURA LOOP
+-- ===== KILL AURA LOOP =====
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -170,7 +172,7 @@ task.spawn(function()
     end
 end)
 
--- NOCLIP LOOP
+-- ===== NOCLIP LOOP =====
 task.spawn(function()
     while true do
         if _G.NoclipEnabled then
@@ -187,7 +189,7 @@ task.spawn(function()
     end
 end)
 
--- VFLY LOOP
+-- ===== VFLY LOOP =====
 task.spawn(function()
     while true do
         if _G.VFlyEnabled then
@@ -220,11 +222,3 @@ task.spawn(function()
         task.wait()
     end
 end)
-
--- LOAD NOTIFICATION
-HelixiaLIB:Notify({
-    Title    = "MvP Loaded",
-    Message  = "All features ready.",
-    Type     = "Success",
-    Duration = 3,
-})
