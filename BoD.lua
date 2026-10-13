@@ -1,5 +1,6 @@
--- Load Amethyst UI
-local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/J0se-j/My-Lua-Library/refs/heads/main/Booting-the-library.lua"))()
+-- Load PealLib
+local repo = 'https://raw.githubusercontent.com/pealz1/PealLib/main/'
+local Library = loadstring(game:HttpGet(repo .. 'Library.lua'))()
 
 -- Global Settings
 _G.KillAuraEnabled = false
@@ -11,10 +12,8 @@ _G.FlySpeed = 50
 
 -- Create Window
 local Window = Library:CreateWindow({
-    Name = "MvP",
-    LoadingTitle = "Loading...",
-    LoadingSubtitle = "BakeOrDie",
-    ToggleUIKeybind = Enum.KeyCode.K
+    Title = "MvP",
+    SubTitle = "BakeOrDie"
 })
 
 -- Services
@@ -24,49 +23,48 @@ local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
 -- ===== COMBAT TAB =====
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-local CombatSection = CombatTab:CreateSection("Kill Aura")
+local CombatTab = Window:AddTab('Combat')
+local CombatBox = CombatTab:AddLeftGroupbox('Kill Aura')
 
-CombatSection:CreateToggle({
-    Name = "Kill Aura",
-    CurrentValue = false,
-    Flag = "KillAuraToggle",
+CombatBox:AddToggle('KillAura', {
+    Text = 'Kill Aura',
+    Default = false,
     Callback = function(Value)
         _G.KillAuraEnabled = Value
     end,
 })
 
-CombatSection:CreateSlider({
-    Name = "Kill Aura Distance",
+CombatBox:AddSlider('AuraDistance', {
+    Text = 'Kill Aura Distance',
+    Default = 250,
     Min = 10,
     Max = 1500,
-    Default = 250,
-    Suffix = " Studs",
-    Flag = "AuraDistance",
+    Rounding = 0,
+    Suffix = ' studs',
     Callback = function(Value)
         _G.AuraDistance = Value
     end,
 })
 
-CombatSection:CreateSlider({
-    Name = "Max Zombies per Tick",
+CombatBox:AddSlider('MaxZombies', {
+    Text = 'Max Zombies per Tick',
+    Default = 15,
     Min = 1,
     Max = 15,
-    Default = 15,
-    Suffix = " Targets",
-    Flag = "MaxZombies",
+    Rounding = 0,
+    Suffix = ' targets',
     Callback = function(Value)
         _G.MaxZombies = Value
     end,
 })
 
 -- ===== ITEMS TAB =====
-local ItemsTab = Window:CreateTab("Items", 4483362458)
-local ItemsSection = ItemsTab:CreateSection("Item Management")
+local ItemsTab = Window:AddTab('Items')
+local ItemsBox = ItemsTab:AddLeftGroupbox('Item Management')
 
-ItemsSection:CreateButton({
-    Name = "Bring Bodies",
-    Callback = function()
+ItemsBox:AddButton({
+    Text = 'Bring Bodies',
+    Func = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
         for _, v in pairs(workspace.Interactables:GetChildren()) do
@@ -82,9 +80,9 @@ ItemsSection:CreateButton({
     end,
 })
 
-ItemsSection:CreateButton({
-    Name = "Bring All Items",
-    Callback = function()
+ItemsBox:AddButton({
+    Text = 'Bring All Items',
+    Func = function()
         local character = LocalPlayer.Character
         if not character or not character.PrimaryPart then return end
         for _, v in pairs(workspace.Interactables:GetChildren()) do
@@ -96,22 +94,20 @@ ItemsSection:CreateButton({
 })
 
 -- ===== PLAYER TAB =====
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-local PlayerSection = PlayerTab:CreateSection("Movement")
+local PlayerTab = Window:AddTab('Player')
+local PlayerBox = PlayerTab:AddLeftGroupbox('Movement')
 
-PlayerSection:CreateToggle({
-    Name = "Noclip",
-    CurrentValue = false,
-    Flag = "NoclipToggle",
+PlayerBox:AddToggle('Noclip', {
+    Text = 'Noclip',
+    Default = false,
     Callback = function(Value)
         _G.NoclipEnabled = Value
     end,
 })
 
-PlayerSection:CreateToggle({
-    Name = "VFly",
-    CurrentValue = false,
-    Flag = "VFlyToggle",
+PlayerBox:AddToggle('VFly', {
+    Text = 'VFly',
+    Default = false,
     Callback = function(Value)
         _G.VFlyEnabled = Value
         if not Value then
@@ -126,13 +122,13 @@ PlayerSection:CreateToggle({
     end,
 })
 
-PlayerSection:CreateSlider({
-    Name = "Fly Speed",
+PlayerBox:AddSlider('FlySpeed', {
+    Text = 'Fly Speed',
+    Default = 50,
     Min = 10,
     Max = 300,
-    Default = 50,
-    Suffix = " Speed",
-    Flag = "FlySpeed",
+    Rounding = 0,
+    Suffix = ' speed',
     Callback = function(Value)
         _G.FlySpeed = Value
     end,
