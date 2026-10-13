@@ -1,15 +1,14 @@
--- Load Rayfield UI Library
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- Global Settings
 _G.KillAuraEnabled = false
 _G.AuraDistance = 250
 _G.MaxZombies = 15
 _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
+_G.FlyUp = false
+_G.FlyDown = false
 
--- Initialize Rayfield Window
 local Window = Rayfield:CreateWindow({
    Name = "MvP",
    LoadingTitle = "MvP Interface",
@@ -26,17 +25,15 @@ local Window = Rayfield:CreateWindow({
    KeySystem = false,
 })
 
--- Game Services & Remotes
 local ZAP = require(game:GetService("ReplicatedStorage").Client.ClientRemotes)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Combat Tab
 local CombatTab = Window:CreateTab("Combat", 4483362458)
 CombatTab:CreateSection("Kill Aura")
 
-local KillAuraToggle = CombatTab:CreateToggle({
+CombatTab:CreateToggle({
    Name = "Kill Aura",
    CurrentValue = false,
    Flag = "KillAuraToggle",
@@ -45,7 +42,7 @@ local KillAuraToggle = CombatTab:CreateToggle({
    end,
 })
 
-local AuraDistanceSlider = CombatTab:CreateSlider({
+CombatTab:CreateSlider({
    Name = "Kill Aura Distance",
    Range = {10, 1500},
    Increment = 50,
@@ -57,7 +54,7 @@ local AuraDistanceSlider = CombatTab:CreateSlider({
    end,
 })
 
-local MaxZombiesSlider = CombatTab:CreateSlider({
+CombatTab:CreateSlider({
    Name = "Max Zombies per Tick",
    Range = {1, 15},
    Increment = 1,
@@ -69,11 +66,10 @@ local MaxZombiesSlider = CombatTab:CreateSlider({
    end,
 })
 
--- Items Tab
 local ItemsTab = Window:CreateTab("Items", 4483362458)
 ItemsTab:CreateSection("Item Management")
 
-local BringBodiesButton = ItemsTab:CreateButton({
+ItemsTab:CreateButton({
    Name = "Bring Bodies",
    Callback = function()
       local character = LocalPlayer.Character
@@ -91,7 +87,7 @@ local BringBodiesButton = ItemsTab:CreateButton({
    end,
 })
 
-local BringAllButton = ItemsTab:CreateButton({
+ItemsTab:CreateButton({
    Name = "Bring All Items",
    Callback = function()
       local character = LocalPlayer.Character
@@ -104,11 +100,10 @@ local BringAllButton = ItemsTab:CreateButton({
    end,
 })
 
--- Player Tab
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 PlayerTab:CreateSection("Movement")
 
-local NoclipToggle = PlayerTab:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "Noclip",
    CurrentValue = false,
    Flag = "NoclipToggle",
@@ -117,7 +112,7 @@ local NoclipToggle = PlayerTab:CreateToggle({
    end,
 })
 
-local VFlyToggle = PlayerTab:CreateToggle({
+PlayerTab:CreateToggle({
    Name = "VFly",
    CurrentValue = false,
    Flag = "VFlyToggle",
@@ -135,7 +130,7 @@ local VFlyToggle = PlayerTab:CreateToggle({
    end,
 })
 
-local FlySpeedSlider = PlayerTab:CreateSlider({
+PlayerTab:CreateSlider({
    Name = "Fly Speed",
    Range = {10, 300},
    Increment = 10,
@@ -147,7 +142,24 @@ local FlySpeedSlider = PlayerTab:CreateSlider({
    end,
 })
 
--- Kill Aura Loop
+PlayerTab:CreateButton({
+   Name = "Fly Up (Hold)",
+   Callback = function()
+      _G.FlyUp = true
+      task.wait(1.5)
+      _G.FlyUp = false
+   end,
+})
+
+PlayerTab:CreateButton({
+   Name = "Fly Down (Hold)",
+   Callback = function()
+      _G.FlyDown = true
+      task.wait(1.5)
+      _G.FlyDown = false
+   end,
+})
+
 task.spawn(function()
     while true do
         if _G.KillAuraEnabled then
@@ -157,7 +169,6 @@ task.spawn(function()
                 local distance = _G.AuraDistance or 250
                 local maxTargets = _G.MaxZombies or 15
                 local count = 0
-                
                 if workspace:FindFirstChild("Monsters") then
                     for _, monster in pairs(workspace.Monsters:GetChildren()) do
                         if count >= maxTargets then break end
@@ -182,7 +193,6 @@ task.spawn(function()
     end
 end)
 
--- Noclip Loop
 task.spawn(function()
     while true do
         if _G.NoclipEnabled then
@@ -199,7 +209,6 @@ task.spawn(function()
     end
 end)
 
--- VFly Loop
 task.spawn(function()
     while true do
         if _G.VFlyEnabled then
@@ -221,6 +230,8 @@ task.spawn(function()
                     if mobileMove.Magnitude > 0 then
                         moveDir += mobileMove
                     end
+                    if _G.FlyUp then moveDir += Vector3.new(0, 1, 0) end
+                    if _G.FlyDown then moveDir -= Vector3.new(0, 1, 0) end
                     if moveDir.Magnitude > 0 then
                         root.AssemblyLinearVelocity = moveDir.Unit * _G.FlySpeed
                     else
@@ -233,7 +244,6 @@ task.spawn(function()
     end
 end)
 
--- Final Notification
 Rayfield:Notify({
    Title = "Script Loaded",
    Content = "All features ready.",
