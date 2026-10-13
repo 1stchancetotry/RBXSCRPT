@@ -7,6 +7,13 @@ _G.NoclipEnabled = false
 _G.VFlyEnabled = false
 _G.FlySpeed = 50
 
+-- Hapus GUI Helixia lama kalau ada
+for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+    if v.Name:lower():find("helixia") or v.Name == "HelixiaUI" then
+        v:Destroy()
+    end
+end
+
 -- Smaller window size for mobile
 local win = HelixiaLIB:CreateWindow({
     Title    = "MvP",
